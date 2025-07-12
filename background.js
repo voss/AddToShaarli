@@ -1,52 +1,80 @@
 const defaultShaarliInstance = "https://example.com/";
 
-function addUrl() {
-  chrome.storage.sync.get({
-    savedShaarliInstance: defaultShaarliInstance
-  }, function (items) {
-    let shaarliInstance = items.savedShaarliInstance;
-    let myCode = "!function(){var o=location.href,e=document.title||o;const popup=window.open('" +
-      shaarliInstance +
-      "?post='+encodeURIComponent(o)+'&title='+encodeURIComponent(e)+'&description='+encodeURIComponent(document.getSelection())+'&source=bookmarklet','_blank','menubar=no,height=800,width=600,toolbar=no,scrollbars=yes,status=no,dialog=1')}();";
-    executeScript(shaarliInstance, myCode);
-  });
+chrome.runtime.onInstalled.addListener(function (details) {
+  if (details.reason === "install") {
+    chrome.runtime.openOptionsPage();
+  }
+});
+
+function addUrl(tab) {
+  chrome.storage.sync.get(
+    {
+      savedShaarliInstance: defaultShaarliInstance,
+    },
+    function (items) {
+      const shaarliInstance = items.savedShaarliInstance;
+      if (
+        shaarliInstance === defaultShaarliInstance ||
+        shaarliInstance === ""
+      ) {
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            alert(
+              "Please setup your Shaarli instance in the options of the extension."
+            );
+          },
+        });
+      } else {
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["addUrl.js"],
+        });
+      }
+    }
+  );
 }
 
-function addNote() {
-  chrome.storage.sync.get({
-    savedShaarliInstance: defaultShaarliInstance
-  }, function (items) {
-    let shaarliInstance = items.savedShaarliInstance;
-    let myCode = "!function(){var e=document.title;const popup=window.open('" +
-      shaarliInstance +
-      "?post='+'&description='+encodeURIComponent(document.getSelection()),'_blank','menubar=no,height=800,width=600,toolbar=no,scrollbars=yes,status=no,dialog=1')}();";
-    executeScript(shaarliInstance, myCode);
-  });
+function addNote(tab) {
+  chrome.storage.sync.get(
+    {
+      savedShaarliInstance: defaultShaarliInstance,
+    },
+    function (items) {
+      const shaarliInstance = items.savedShaarliInstance;
+      if (
+        shaarliInstance === defaultShaarliInstance ||
+        shaarliInstance === ""
+      ) {
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            alert(
+              "Please setup your Shaarli instance in the options of the extension."
+            );
+          },
+        });
+      } else {
+        chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["addNote.js"],
+        });
+      }
+    }
+  );
 }
 
-function executeScript(shaarliInstance, code) {
-  if (shaarliInstance === defaultShaarliInstance || shaarliInstance === "")
-    code = "alert('Please setup your Shaarli instance in the options of the extension.')";
-  chrome.tabs.query({
-    active: true
-  }, function () {
-    chrome.tabs.executeScript({
-      code: code
-    });
-  });
-}
-
-chrome.commands.onCommand.addListener(function (command) {
+chrome.commands.onCommand.addListener(function (command, tab) {
   switch (command) {
     case "add-url":
-      addUrl();
+      addUrl(tab);
       break;
     case "add-note":
-      addNote();
+      addNote(tab);
       break;
   }
 });
 
-chrome.browserAction.onClicked.addListener(function () {
-  addUrl();
+chrome.action.onClicked.addListener(function (tab) {
+  addUrl(tab);
 });
